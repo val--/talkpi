@@ -37,15 +37,33 @@ MARKDOWN_CHARS = ["*", "_", "`", "#"]
 WHISPER_LANGUAGE = os.getenv("WHISPER_LANGUAGE", "en")
 
 MD_LINK_RE = re.compile(r'\[([^\]]+)\]\([^)]+\)')
+EMOJI_RE = re.compile(
+    "["
+    "\U0001F600-\U0001F64F"  # emoticons
+    "\U0001F300-\U0001F5FF"  # symbols & pictographs
+    "\U0001F680-\U0001F6FF"  # transport & map
+    "\U00002600-\U000026FF"  # misc symbols
+    "\U00002700-\U000027BF"  # dingbats
+    "\U0001F1E0-\U0001F1FF"  # flags
+    "]+",
+    flags=re.UNICODE,
+)
 
 def clean_for_tts(text: str) -> str:
     """Clean text for TTS: remove markdown links, formatting chars, and normalize spaces."""
     if not text:
         return text
-
+    # Remove markdown links [text](url) -> text
     text = MD_LINK_RE.sub(r'\1', text)
+
+    # Remove emoji characters so TTS won't try to 'describe' them
+    text = EMOJI_RE.sub('', text)
+
+    # Remove simple markdown chars
     for ch in MARKDOWN_CHARS:
         text = text.replace(ch, "")
+
+    # Normalize whitespace
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
@@ -151,8 +169,15 @@ def transcribe_audio(path: str = AUDIO_INPUT) -> str:
 
 # ======== Ollama streaming + dispatch vers TTS ========
 
-def chat_stream_with_tts(prompt: str, history):
-    """Stream Ollama response while sending sentences to Piper for TTS."""
+def chat_stream_with_tts(prompt: str, history, play_tts: bool = True):
+    """Stream Ollama response while sending sentences to Piper for TTS.
+
+    Args:
+        prompt: user prompt text
+        history: conversation history (list of messages)
+        play_tts: if True, start the TTS worker and play audio on this host.
+                  When running as an API server, set to False to avoid server-side playback.
+    """
     messages = history + [
         {"role": "user", "content": prompt},
     ]
@@ -163,9 +188,12 @@ def chat_stream_with_tts(prompt: str, history):
         "messages": messages,
     }
 
-    q = Queue()
-    t = threading.Thread(target=tts_worker, args=(q,), daemon=True)
-    t.start()
+    q = None
+    t = None
+    if play_tts:
+        q = Queue()
+        t = threading.Thread(target=tts_worker, args=(q,), daemon=True)
+        t.start()
 
     full_text = ""
     current_sentence = ""
@@ -197,17 +225,18 @@ def chat_stream_with_tts(prompt: str, history):
 
             if any(sep in current_sentence for sep in SENTENCE_SEPARATORS):
                 sentence_to_speak = current_sentence.strip()
-                if sentence_to_speak:
+                if sentence_to_speak and play_tts and q is not None:
                     q.put(clean_for_tts(sentence_to_speak))
                 current_sentence = ""
 
-        if current_sentence.strip():
+        if current_sentence.strip() and play_tts and q is not None:
             q.put(clean_for_tts(current_sentence.strip()))
 
     print("\n\n[Fin de la réponse]\n")
 
-    q.put(None)
-    q.join()
+    if play_tts and q is not None:
+        q.put(None)
+        q.join()
 
     return full_text
 
@@ -216,7 +245,7 @@ def chat_stream_with_tts(prompt: str, history):
 
 def main():
     system_prompt = (
-        "Tu es un assistant vocal qui répond en français de manière claire "
+        "Tu es un assistant vocal qui répond UNIQUEMENT en français de manière claire "
         "et pédagogique en quelques phrases. "
         "IMPORTANT : réponds en texte brut, sans Markdown, sans gras, sans italique, "
         "sans listes à puces, sans titres, sans emojis."

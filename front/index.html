@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Michk.IA — Chat</title>
+    <style>
+      :root{
+        /* Dark/technical theme */
+        --bg: #0b0f14;
+        --panel: #071018;
+        --card: #0f1720;
+        --accent: #ff4165; /* neon/red accent */
+        --accent-2: #7c3aed; /* purple */
+        --muted: #94a3b8;
+        --user-bg: rgba(124,58,237,0.10);
+        --assistant-bg: rgba(255,65,101,0.06);
+        --radius: 12px;
+        --gap: 12px;
+        --max-width: 980px;
+        --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+      }
+      html,body{height:100%;}
+      body { font-family: var(--font-sans); margin:0; background:linear-gradient(180deg,#06080b 0%, #0b0f14 100%); color:#e6eef6; }
+      #app { max-width: var(--max-width); margin:28px auto; padding:18px; }
+
+      .shell{ display:flex; flex-direction:column; gap:var(--gap); }
+      .header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+      .brand{ display:flex; align-items:center; gap:16px; }
+      .logo{ width:140px; height:140px; border-radius:16px; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); box-shadow: 0 20px 50px rgba(124,58,237,0.16); border:2px solid rgba(57,255,20,0.08); transform:translateZ(0); position:relative; }
+      .logo img{ width:128px; height:128px; object-fit:contain; display:block; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.75)); }
+      /* prominent pulsing neon outline for the cat */
+      .logo::after{
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: 18px;
+        background: radial-gradient(closest-side, rgba(57,255,20,0.08), transparent 60%);
+        box-shadow: 0 0 36px rgba(57,255,20,0.06), 0 0 20px rgba(0,230,255,0.03);
+        pointer-events: none;
+        animation: pulseGlow 2.6s ease-in-out infinite;
+      }
+
+      @keyframes pulseGlow{
+        0%{ transform: scale(0.98); opacity:0.8; }
+        50%{ transform: scale(1.02); opacity:1; }
+        100%{ transform: scale(0.98); opacity:0.8; }
+      }
+      .title{ font-size:1.25rem; font-weight:800; color:#fff; font-family: var(--mono); letter-spacing:0.6px; }
+      .subtitle{ color:var(--muted); font-size:0.95rem; }
+
+      .card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,0.6); overflow:hidden; position:relative; border:1px solid rgba(255,255,255,0.02); }
+      .chat-area{ display:flex; flex-direction:column; min-height:420px; max-height:72vh; }
+      .messages{ padding:18px; display:flex; flex-direction:column; gap:12px; overflow:auto; }
+
+      .message{ display:flex; gap:10px; align-items:flex-start; }
+      .avatar{ width:40px; height:40px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:#0b1220; background:linear-gradient(180deg,#e6eef6,#c7d2da); }
+      .avatar.user{ background:linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95)); color:#fff; }
+      .avatar.assistant{ background:linear-gradient(135deg, rgba(255,65,101,0.9), rgba(255,116,117,0.9)); color:#fff; }
+
+      .bubble{ padding:12px 14px; border-radius:10px; max-width:84%; line-height:1.4; color:#e6eef6; font-size:0.98rem; }
+      .bubble.user{ background: linear-gradient(180deg, rgba(124,58,237,0.12), rgba(124,58,237,0.06)); border:1px solid rgba(124,58,237,0.08); }
+      .bubble.assistant{ background: linear-gradient(180deg, rgba(255,65,101,0.06), rgba(255,65,101,0.02)); border:1px solid rgba(255,65,101,0.03); }
+
+      .controls{ padding:14px 16px; border-top:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column; gap:10px; }
+      .input-row{ display:flex; gap:8px; align-items:flex-end; }
+      textarea{ flex:1; min-height:84px; max-height:260px; resize:vertical; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); background:transparent; color:var(--muted); font-family:var(--mono); font-size:0.95rem; }
+      .btn{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; box-shadow:0 8px 24px rgba(124,58,237,0.14); }
+      .btn.secondary{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.03); font-weight:700; }
+      .btn.ghost{ background:transparent; color:var(--muted); border:none; }
+      .controls .row{ display:flex; gap:8px; align-items:center; }
+
+      .meta{ font-size:0.85rem; color:var(--muted); font-family:var(--mono); }
+
+      /* small screens */
+      @media (max-width:640px){ .title{ font-size:1rem; } .messages{ padding:12px; } .logo{ width:68px; height:68px; } }
+    </style>
+    <!-- React + Babel via CDN for a simple no-build example -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <!-- Markdown rendering and sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script type="text/babel">
+      const { useState, useRef, useEffect } = React;
+
+      function App(){
+        const [input, setInput] = useState('');
+        const [messages, setMessages] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [recording, setRecording] = useState(false);
+        const [countdown, setCountdown] = useState(0);
+        const recorderRef = useRef(null);
+        const streamRef = useRef(null);
+        const timerRef = useRef(null);
+        const autoStopRef = useRef(null);
+        const audioRef = useRef(null);
+        const audioQueueRef = useRef([]);
+        const audioPlayingRef = useRef(false);
+        const messagesRef = useRef(null);
+        const scrollDebounceRef = useRef(null);
+
+        // cleanup on unmount
+        useEffect(()=>{
+          return ()=>{
+            if(timerRef.current) clearInterval(timerRef.current);
+            if(autoStopRef.current) clearTimeout(autoStopRef.current);
+            if(streamRef.current){ streamRef.current.getTracks().forEach(t=>t.stop()); }
+            if(scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+          };
+        }, []);
+
+        // Auto-scroll to bottom when messages change, only if user is near bottom
+        const isAtBottomRef = useRef(true);
+        const [showScrollBtn, setShowScrollBtn] = useState(false);
+
+        useEffect(()=>{
+          try{
+            const el = messagesRef.current;
+            if(!el) return;
+            if(isAtBottomRef.current){
+              // Debounce scroll to avoid repeated scrolls during fast streaming
+              if(scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+              scrollDebounceRef.current = setTimeout(()=>{
+                const last = el.lastElementChild;
+                if(last && typeof last.scrollIntoView === 'function'){
+                  last.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }else{
+                  el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+                }
+              }, 120);
+              setShowScrollBtn(false);
+            }else{
+              // user is reading history: show jump-to-bottom button
+              setShowScrollBtn(true);
+            }
+          }catch(e){ /* ignore */ }
+        }, [messages]);
+
+        // Track scroll position to detect if user is at bottom
+        useEffect(()=>{
+          const el = messagesRef.current;
+          if(!el) return;
+          const onScroll = ()=>{
+            const threshold = 80; // px
+            const atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= threshold;
+            isAtBottomRef.current = atBottom;
+            if(atBottom) setShowScrollBtn(false);
+          };
+          el.addEventListener('scroll', onScroll);
+          // initialize
+          onScroll();
+          return ()=> el.removeEventListener('scroll', onScroll);
+        }, []);
+
+        // play next audio chunk in queue
+        function playNextAudio(){
+          if(audioPlayingRef.current) {
+            console.log('AUDIO_QUEUE: playback already in progress');
+            return;
+          }
+          const q = audioQueueRef.current;
+          if(!q.length) {
+            console.log('AUDIO_QUEUE: queue empty, nothing to play');
+            return;
+          }
+          const url = q.shift();
+          console.log('AUDIO_QUEUE: starting playback, queue remaining=', q.length);
+          audioPlayingRef.current = true;
+          if(audioRef.current){
+            audioRef.current.src = url;
+            console.log('AUDIO_QUEUE: set audio src, calling play()');
+            const p = audioRef.current.play();
+            if(p && p.catch){
+              p.catch(err=>{ 
+                console.error('AUDIO_QUEUE: play() rejected:', err);
+              }).finally(()=>{});
+            }
+            audioRef.current.onended = ()=>{
+              console.log('AUDIO_QUEUE: audio ended, revoking URL');
+              // revoke object URL and continue
+              try{ URL.revokeObjectURL(url); }catch(e){}
+              audioPlayingRef.current = false;
+              // play next if available
+              setTimeout(()=>playNextAudio(), 50);
+            };
+          }
+        }
+
+        // Helper to parse SSE-like events from a fetch stream
+        async function streamEvents(resp, handlers){
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder();
+          let buf = '';
+          console.log('[SSE] starting stream reader');
+          while(true){
+            const {done, value} = await reader.read();
+            if(done) { 
+              console.log('[SSE] stream ended');
+              break;
+            }
+            buf += decoder.decode(value, {stream: true});
+            let idx;
+            while((idx = buf.indexOf('\n\n')) !== -1){
+              const raw = buf.slice(0, idx);
+              buf = buf.slice(idx + 2);
+              // parse event block
+              const lines = raw.split(/\r?\n/);
+              let ev = 'message';
+              let data = '';
+              for(const line of lines){
+                if(line.startsWith('event:')) ev = line.slice(6).trim();
+                else if(line.startsWith('data:')) data += line.slice(5).trim();
+              }
+              try{
+                const payload = JSON.parse(data);
+                console.log('[SSE] event:', ev, 'payload keys:', Object.keys(payload));
+                if(handlers[ev]) {
+                  handlers[ev](payload);
+                } else {
+                  console.warn('[SSE] no handler for event:', ev);
+                }
+              }catch(e){
+                console.warn('[SSE] failed to parse event data', e, 'data=', data.substring(0,100));
+                if(handlers['error']) handlers['error']({error: 'parse_error'});
+              }
+            }
+          }
+        }
+
+        async function sendText(text){
+          if(!text) return;
+          // Add user message
+          setMessages(m => [...m, {role:'user', text}]);
+          setLoading(true);
+
+          // Add assistant placeholder and keep its index
+          let assistantIndex = null;
+          setMessages(prev=>{
+            assistantIndex = prev.length;
+            return [...prev, {role:'assistant', text: ''}];
+          });
+
+          try{
+            const resp = await fetch('/api/chat-text-stream', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({text})
+            });
+
+            await streamEvents(resp, {
+              partial: ({chunk})=>{
+                // append chunk to assistant message progressively
+                setMessages(prev=>{
+                  const copy = prev.slice();
+                  const cur = copy[assistantIndex] || {role:'assistant', text:''};
+                  cur.text = (cur.text || '') + chunk;
+                  copy[assistantIndex] = cur;
+                  return copy;
+                });
+                // attempt to play queued audio if not already
+                setTimeout(()=>playNextAudio(), 0);
+              },
+              audio: ({audio_base64})=>{
+                console.log('AUDIO_EVENT: received audio event, size=', audio_base64?audio_base64.length:0);
+                if(audio_base64){
+                  try{
+                    console.log('AUDIO_EVENT: decoding base64...');
+                    const bytes = atob(audio_base64);
+                    const len = bytes.length;
+                    const buffer = new Uint8Array(len);
+                    for(let i=0;i<len;i++) buffer[i]=bytes.charCodeAt(i);
+                    const blob = new Blob([buffer], {type: 'audio/wav'});
+                    const url = URL.createObjectURL(blob);
+                    console.log('AUDIO_EVENT: created blob URL:', url);
+                    audioQueueRef.current.push(url);
+                    console.log('AUDIO_EVENT: enqueued, queue size=', audioQueueRef.current.length);
+                    // start playing if nothing is playing
+                    setTimeout(()=>playNextAudio(), 0);
+                  }catch(e){ console.error('AUDIO_EVENT: decode/enqueue failed', e); }
+                }else{
+                  console.warn('AUDIO_EVENT: no audio_base64 in event');
+                }
+              },
+              final: ({text: finalText, audio_base64})=>{
+                // finalize assistant message
+                setMessages(prev=>{
+                  const copy = prev.slice();
+                  copy[assistantIndex] = {role:'assistant', text: finalText};
+                  return copy;
+                });
+                // only queue audio if server sent one (usually null now since per-sentence audio already played)
+                if(audio_base64){
+                  try{
+                    const bytes = atob(audio_base64);
+                    const len = bytes.length;
+                    const buffer = new Uint8Array(len);
+                    for(let i=0;i<len;i++) buffer[i]=bytes.charCodeAt(i);
+                    const blob = new Blob([buffer], {type: 'audio/wav'});
+                    const url = URL.createObjectURL(blob);
+                    audioQueueRef.current.push(url);
+                    setTimeout(()=>playNextAudio(), 0);
+                  }catch(e){ console.error('audio play failed', e); }
+                }
+              },
+              error: ({error})=>{
+                setMessages(m => [...m, {role:'system', text: 'Erreur : '+(error||'inconnue')}]);
+              }
+            });
+          }catch(e){
+            console.error(e);
+            setMessages(m => [...m, {role:'system', text: 'Flux interrompu : '+(e.message||e)}]);
+          }finally{ setLoading(false); }
+        }
+
+        function onSend(e){ e.preventDefault(); sendText(input); setInput(''); }
+
+        // Use Web Speech API for simple browser-side recording/transcription
+        // Toggle recording: start or stop
+        function onSpeak(){
+          if(recording){
+            stopRecording();
+          }else{
+            startRecording();
+          }
+        }
+
+        async function startRecording(duration = 7000){
+          if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+            alert("Enregistrement non pris en charge dans ce navigateur. Veuillez taper votre question.");
+            return;
+          }
+
+          setMessages(m => [...m, {role:'system', text: 'Enregistrement : capture de ' + (duration/1000) + 's...'}]);
+
+          try{
+            const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+            streamRef.current = stream;
+            const recorder = new MediaRecorder(stream);
+            recorderRef.current = recorder;
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async ()=>{
+              // stop tracks
+              try{ streamRef.current.getTracks().forEach(t=>t.stop()); }catch(e){}
+              setRecording(false);
+              setCountdown(0);
+              if(timerRef.current){ clearInterval(timerRef.current); timerRef.current = null; }
+              if(autoStopRef.current){ clearTimeout(autoStopRef.current); autoStopRef.current = null; }
+
+              const blob = new Blob(chunks, {type: 'audio/webm'});
+              await uploadBlobStream(blob);
+            };
+
+            recorder.start();
+            setRecording(true);
+            setCountdown(Math.ceil(duration/1000));
+
+            // countdown interval
+            timerRef.current = setInterval(()=>{
+              setCountdown(c=>{
+                if(c<=1){ clearInterval(timerRef.current); timerRef.current=null; }
+                return Math.max(0, c-1);
+              });
+            }, 1000);
+
+            // auto stop
+            autoStopRef.current = setTimeout(()=>{
+              if(recorderRef.current && recorderRef.current.state !== 'inactive') recorderRef.current.stop();
+            }, duration);
+          }catch(err){
+            console.error('record start failed', err);
+            setMessages(m => [...m, {role:'system', text: 'Échec de l\'enregistrement : ' + (err.message||err)}]);
+            setRecording(false);
+            setCountdown(0);
+          }
+        }
+
+        function stopRecording(){
+          if(recorderRef.current && recorderRef.current.state !== 'inactive'){
+            recorderRef.current.stop();
+          }
+          if(timerRef.current){ clearInterval(timerRef.current); timerRef.current = null; }
+          if(autoStopRef.current){ clearTimeout(autoStopRef.current); autoStopRef.current = null; }
+          setRecording(false);
+          setCountdown(0);
+        }
+
+        async function uploadBlobStream(blob){
+          const fd = new FormData();
+          fd.append('file', blob, 'recording.webm');
+          setMessages(m => [...m, {role:'system', text: "Téléversement de l'enregistrement pour transcription..."}]);
+
+          // assistantIndex will be set when we receive the transcript event
+          let assistantIndex = null;
+
+          try{
+            const resp = await fetch('/api/chat-audio-stream', {method:'POST', body: fd});
+
+            await streamEvents(resp, {
+              transcript: ({transcript})=>{
+                // display transcript as user's message, then insert assistant placeholder
+                setMessages(prev=>{
+                  assistantIndex = prev.length + 1; // assistant will be after the new user message
+                  return [...prev, {role:'user', text: transcript}, {role:'assistant', text: ''}];
+                });
+              },
+              partial: ({chunk})=>{
+                setMessages(prev=>{
+                  const copy = prev.slice();
+                  const cur = copy[assistantIndex] || {role:'assistant', text:''};
+                  cur.text = (cur.text || '') + chunk;
+                  copy[assistantIndex] = cur;
+                  return copy;
+                });
+              },
+              audio: ({audio_base64})=>{
+                console.log('AUDIO_EVENT: received audio event, size=', audio_base64?audio_base64.length:0);
+                if(audio_base64){
+                  try{
+                    console.log('AUDIO_EVENT: decoding base64...');
+                    const bytes = atob(audio_base64);
+                    const len = bytes.length;
+                    const buffer = new Uint8Array(len);
+                    for(let i=0;i<len;i++) buffer[i]=bytes.charCodeAt(i);
+                    const blob = new Blob([buffer], {type: 'audio/wav'});
+                    const url = URL.createObjectURL(blob);
+                    console.log('AUDIO_EVENT: created blob URL:', url);
+                    audioQueueRef.current.push(url);
+                    console.log('AUDIO_EVENT: enqueued, queue size=', audioQueueRef.current.length);
+                    // start playing if nothing is playing
+                    setTimeout(()=>playNextAudio(), 0);
+                  }catch(e){ console.error('AUDIO_EVENT: decode/enqueue failed', e); }
+                }else{
+                  console.warn('AUDIO_EVENT: no audio_base64 in event');
+                }
+              },
+              final: ({text: finalText, audio_base64})=>{
+                setMessages(prev=>{
+                  const copy = prev.slice();
+                  copy[assistantIndex] = {role:'assistant', text: finalText};
+                  return copy;
+                });
+                if(audio_base64){
+                  try{
+                    const bytes = atob(audio_base64);
+                    const len = bytes.length;
+                    const buffer = new Uint8Array(len);
+                    for(let i=0;i<len;i++) buffer[i]=bytes.charCodeAt(i);
+                    const blob2 = new Blob([buffer], {type: 'audio/wav'});
+                    const url = URL.createObjectURL(blob2);
+                    if(audioRef.current){ audioRef.current.src = url; audioRef.current.play().catch(()=>{}); }
+                  }catch(e){ console.error('playback failed', e); }
+                }
+              },
+              error: ({error})=>{
+                setMessages(m => [...m, {role:'system', text: 'Error: '+(error||'unknown')}]);
+              }
+            });
+
+          }catch(err){
+            console.error('upload failed', err);
+            setMessages(m => [...m, {role:'system', text: 'Téléversement/transcription échoué : ' + (err.message||err)}]);
+          }
+        }
+
+        return (
+          <div className="shell">
+            <div className="header">
+              <div className="brand">
+                <div className="logo"><img src="michkia_gentil_transp.png" alt="Michk" onError={(e)=>{ e.target.style.display='none'; }} /></div>
+                <div>
+                  <div className="title">Michk.IA</div>
+                  <div className="subtitle">IA dangereuse venue du futur — à manier avec prudence</div>
+                </div>
+              </div>
+              <div className="meta">Interface expérimentale — Comportement non fiable</div>
+            </div>
+
+            <div className="card chat-area">
+              <div className="messages" id="messages" ref={messagesRef}>
+                {messages.map((m,i)=>{
+                  const isUser = m.role === 'user';
+                  const roleLabel = (m.role === 'user') ? 'Vous' : (m.role === 'assistant') ? 'Assistant' : 'Système';
+                  return (
+                    <div key={i} className="message">
+                      <div className={"avatar "+(isUser? 'user':'assistant')}>{isUser? 'U':'A'}</div>
+                      <div className={"bubble "+(isUser? 'user':'assistant')}> 
+                        <div style={{fontSize:12, color:'#374151', marginBottom:6, fontWeight:600}}>{roleLabel}</div>
+                        <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse(m.text || ''))}} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* floating jump-to-bottom button */}
+              <button
+                title="Aller au bas"
+                onClick={()=>{
+                  if(messagesRef.current){ messagesRef.current.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); isAtBottomRef.current = true; setShowScrollBtn(false); }
+                }}
+                style={{
+                  position:'absolute',
+                  right:16,
+                  bottom:92,
+                  display: showScrollBtn ? 'inline-flex' : 'none',
+                  alignItems:'center',
+                  justifyContent:'center',
+                  padding:'8px 12px',
+                  borderRadius:8,
+                  boxShadow:'0 6px 16px rgba(2,6,23,0.08)',
+                  background:'#0ea5e9',
+                  color:'#fff',
+                  border:'none',
+                  cursor:'pointer'
+                }}
+              >
+                Aller au bas
+              </button>
+
+              <form onSubmit={onSend} className="controls">
+                <div className="input-row">
+                  <textarea value={input} onChange={e=>setInput(e.target.value)} placeholder="Tapez votre question ou appuyez sur 'Parler'..." />
+                  <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                    <button className="btn" type="submit" disabled={loading}>Envoyer</button>
+                    <button className="btn secondary" type="button" onClick={onSpeak}>{recording ? `Arrêter (${countdown}s)` : 'Parler'}</button>
+                  </div>
+                </div>
+
+                <div className="row">
+                  <div style={{display:'flex', gap:8}}>
+                    <button type="button" className="btn ghost" onClick={()=>{setMessages([]); fetch('/api/clear-history',{method:'POST'}).catch(()=>{});}}>Effacer</button>
+                    <button type="button" className="btn ghost" onClick={async ()=>{
+                      try{ const r = await fetch('/api/history'); const h = await r.json(); setMessages(h.map(item=>({role:item.role, text:item.content}))); }catch(e){ console.error(e); }
+                    }}>Historique</button>
+                  </div>
+
+                  <div style={{marginLeft:'auto', display:'flex', gap:8}}>
+                    <button type="button" className="btn ghost" onClick={async ()=>{
+                      const resp = await fetch('/api/test-stream'); await streamEvents(resp, { message: (d)=>console.log('[TEST] reçu:', d) });
+                    }}>Test Flux</button>
+                    <button type="button" className="btn ghost" onClick={async ()=>{
+                      const resp = await fetch('/api/test-audio-stream'); await streamEvents(resp, { audio: ({audio_base64})=>{
+                        if(audio_base64){ try{ const bytes = atob(audio_base64); const len = bytes.length; const buffer = new Uint8Array(len); for(let i=0;i<len;i++) buffer[i]=bytes.charCodeAt(i); const blob = new Blob([buffer], {type: 'audio/wav'}); const url = URL.createObjectURL(blob); audioQueueRef.current.push(url); setTimeout(()=>playNextAudio(),0); }catch(e){ console.error(e); } }
+                      }});
+                    }}>Test Audio</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            <audio ref={audioRef} style={{display:'none'}} />
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+    </script>
+  </body>
+</html>

@@ -15,6 +15,15 @@ A lightweight French voice assistant using local AI models: speech-to-text (Whis
 - Type text + **Enter**: Sends directly to the model
 - Type **'q'** + **Enter**: Exit
 
+## Offline-first mode
+
+The UI uses browser recording (MediaRecorder) and uploads audio to the server for transcription and synthesis. This makes the project usable offline (no external speech recognition needed). Requirements for offline usage:
+- `whisper.cpp` and model file present on the server
+- `piper` for TTS (local)
+- `ffmpeg` installed on the server to convert browser audio (webm) to WAV
+
+If you prefer a network-dependent browser speech service, the UI previously attempted the Web Speech API but the offline MediaRecorder approach is more reliable for local setups.
+
 ## Requirements
 
 - Python 3.7+, `arecord`, `aplay` (ALSA utils)
