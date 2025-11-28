@@ -17,45 +17,71 @@
         --assistant-bg: rgba(255,65,101,0.06);
         --radius: 12px;
         --gap: 12px;
-        --max-width: 980px;
+        --max-width: 1200px;
         --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
         --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+        --chat-height: 600px;
       }
       html,body{height:100%;}
       body { font-family: var(--font-sans); margin:0; background:linear-gradient(180deg,#06080b 0%, #0b0f14 100%); color:#e6eef6; }
       #app { max-width: var(--max-width); margin:28px auto; padding:18px; }
 
-      .shell{ display:flex; flex-direction:column; gap:var(--gap); }
-      .header{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
-      .brand{ display:flex; align-items:center; gap:16px; }
-      .logo{ width:140px; height:140px; border-radius:16px; overflow:hidden; display:inline-flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)); box-shadow: 0 20px 50px rgba(124,58,237,0.16); border:2px solid rgba(57,255,20,0.08); transform:translateZ(0); position:relative; }
-      .logo img{ width:128px; height:128px; object-fit:contain; display:block; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.75)); }
-      /* prominent pulsing neon outline for the cat */
-      .logo::after{
-        content: '';
-        position: absolute;
-        inset: -6px;
-        border-radius: 18px;
-        background: radial-gradient(closest-side, rgba(57,255,20,0.08), transparent 60%);
-        box-shadow: 0 0 36px rgba(57,255,20,0.06), 0 0 20px rgba(0,230,255,0.03);
-        pointer-events: none;
-        animation: pulseGlow 2.6s ease-in-out infinite;
+      .shell{ display:flex; flex-direction:column; gap:10px; }
+      
+      /* Header with cat + title */
+      .header-bar{ 
+        display:flex; 
+        align-items:center; 
+        justify-content:space-between; 
+        gap:24px; 
+      }
+      .brand{ display:flex; align-items:center; gap:20px; }
+      
+      /* Cat avatar in header - floating, no frame */
+      .cat-avatar{
+        flex-shrink: 0;
+        width: 180px;
+        height: 180px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .cat-image{
+        width: 180px;
+        height: 180px;
+        object-fit: contain;
+        filter: 
+          drop-shadow(0 8px 20px rgba(0,0,0,0.6)) 
+          drop-shadow(0 0 40px rgba(57,255,20,0.15))
+          drop-shadow(0 0 80px rgba(124,58,237,0.1));
+        position: relative;
+        z-index: 1;
+        animation: catFloat 4s ease-in-out infinite;
+      }
+      
+      @keyframes catFloat{
+        0%, 100%{ transform: translateY(0); }
+        50%{ transform: translateY(-6px); }
       }
 
       @keyframes pulseGlow{
-        0%{ transform: scale(0.98); opacity:0.8; }
-        50%{ transform: scale(1.02); opacity:1; }
-        100%{ transform: scale(0.98); opacity:0.8; }
+        0%{ opacity:0.7; }
+        50%{ opacity:1; }
+        100%{ opacity:0.7; }
       }
-      .title{ font-size:1.25rem; font-weight:800; color:#fff; font-family: var(--mono); letter-spacing:0.6px; }
-      .subtitle{ color:var(--muted); font-size:0.95rem; }
-
+      
+      .brand-text{ display:flex; flex-direction:column; gap:8px; }
+      .title{ font-size:2.4rem; font-weight:800; color:#fff; font-family: var(--mono); letter-spacing:1px; line-height:1.1; }
+      .subtitle{ color:var(--muted); font-size:1.05rem; max-width:400px; }
+      .meta{ font-size:0.85rem; color:var(--muted); font-family:var(--mono); text-align:right; }
+      
       .card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,0.6); overflow:hidden; position:relative; border:1px solid rgba(255,255,255,0.02); }
-      .chat-area{ display:flex; flex-direction:column; min-height:420px; max-height:72vh; }
-      .messages{ padding:18px; display:flex; flex-direction:column; gap:12px; overflow:auto; }
+      .chat-area{ display:flex; flex-direction:column; min-height: 500px; max-height: 70vh; }
+      .messages{ padding:18px; display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; }
 
       .message{ display:flex; gap:10px; align-items:flex-start; }
-      .avatar{ width:40px; height:40px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:#0b1220; background:linear-gradient(180deg,#e6eef6,#c7d2da); }
+      .avatar{ width:40px; height:40px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:#0b1220; background:linear-gradient(180deg,#e6eef6,#c7d2da); flex-shrink:0; }
       .avatar.user{ background:linear-gradient(135deg, rgba(124,58,237,0.95), rgba(99,102,241,0.95)); color:#fff; }
       .avatar.assistant{ background:linear-gradient(135deg, rgba(255,65,101,0.9), rgba(255,116,117,0.9)); color:#fff; }
 
@@ -66,15 +92,31 @@
       .controls{ padding:14px 16px; border-top:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column; gap:10px; }
       .input-row{ display:flex; gap:8px; align-items:flex-end; }
       textarea{ flex:1; min-height:84px; max-height:260px; resize:vertical; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); background:transparent; color:var(--muted); font-family:var(--mono); font-size:0.95rem; }
-      .btn{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; box-shadow:0 8px 24px rgba(124,58,237,0.14); }
-      .btn.secondary{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.03); font-weight:700; }
+      .btn{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; box-shadow:0 8px 24px rgba(124,58,237,0.14); transition: transform 0.15s, box-shadow 0.15s; }
+      .btn:hover{ transform: translateY(-1px); box-shadow:0 12px 28px rgba(124,58,237,0.2); }
+      .btn.secondary{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.08); font-weight:700; }
+      .btn.secondary:hover{ border-color: rgba(255,255,255,0.15); }
       .btn.ghost{ background:transparent; color:var(--muted); border:none; }
+      .btn.ghost:hover{ color:#fff; }
       .controls .row{ display:flex; gap:8px; align-items:center; }
 
-      .meta{ font-size:0.85rem; color:var(--muted); font-family:var(--mono); }
-
-      /* small screens */
-      @media (max-width:640px){ .title{ font-size:1rem; } .messages{ padding:12px; } .logo{ width:68px; height:68px; } }
+      /* Responsive */
+      @media (max-width:768px){ 
+        .header-bar{ flex-direction:column; align-items:flex-start; gap:16px; }
+        .brand{ gap:16px; }
+        .cat-avatar{ width:120px; height:120px; }
+        .cat-image{ width:120px; height:120px; }
+        .title{ font-size:1.8rem; }
+        .subtitle{ font-size:0.95rem; }
+        .meta{ text-align:left; }
+      }
+      @media (max-width:480px){ 
+        .title{ font-size:1.4rem; } 
+        .messages{ padding:12px; } 
+        .cat-avatar{ width:90px; height:90px; }
+        .cat-image{ width:90px; height:90px; }
+        .subtitle{ font-size:0.85rem; }
+      }
     </style>
     <!-- React + Babel via CDN for a simple no-build example -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -471,17 +513,21 @@
 
         return (
           <div className="shell">
-            <div className="header">
+            {/* Header: Cat + Title */}
+            <div className="header-bar">
               <div className="brand">
-                <div className="logo"><img src="michkia_gentil_transp.png" alt="Michk" onError={(e)=>{ e.target.style.display='none'; }} /></div>
-                <div>
+                <div className="cat-avatar">
+                  <img className="cat-image" src="michkia_gentil_transp.png" alt="Michk.IA" onError={(e)=>{ e.target.src='michkia_transp.png'; }} />
+                </div>
+                <div className="brand-text">
                   <div className="title">Michk.IA</div>
-                  <div className="subtitle">IA dangereuse venue du futur — à manier avec prudence</div>
+                  <div className="subtitle">IA dangereuse venue du futur</div>
                 </div>
               </div>
-              <div className="meta">Interface expérimentale — Comportement non fiable</div>
+              <div className="meta">/!\ Interface expérimentale<br/>/!\ Comportement non fiable</div>
             </div>
 
+            {/* Full-width Chat */}
             <div className="card chat-area">
               <div className="messages" id="messages" ref={messagesRef}>
                 {messages.map((m,i)=>{
@@ -526,7 +572,12 @@
 
               <form onSubmit={onSend} className="controls">
                 <div className="input-row">
-                  <textarea value={input} onChange={e=>setInput(e.target.value)} placeholder="Tapez votre question ou appuyez sur 'Parler'..." />
+                  <textarea 
+                    value={input} 
+                    onChange={e=>setInput(e.target.value)} 
+                    onKeyDown={e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(input.trim() && !loading){ sendText(input); setInput(''); } } }}
+                    placeholder="Tapez votre question ou appuyez sur 'Parler'..." 
+                  />
                   <div style={{display:'flex', flexDirection:'column', gap:8}}>
                     <button className="btn" type="submit" disabled={loading}>Envoyer</button>
                     <button className="btn secondary" type="button" onClick={onSpeak}>{recording ? `Arrêter (${countdown}s)` : 'Parler'}</button>
