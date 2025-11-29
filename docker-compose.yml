@@ -1,0 +1,73 @@
+services:
+  # Ollama LLM server
+  ollama:
+    image: ollama/ollama:latest
+    container_name: talkpi-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    # GPU support (uncomment if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Pull the model on startup (only if not already present) and keep container running
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: talkpi-ollama-init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        # Check if model already exists
+        if ollama list | grep -q "gemma3:1b"; then
+          echo "Model gemma3:1b already present, skipping download."
+        else
+          echo "Pulling model gemma3:1b (first time only)..."
+          ollama pull gemma3:1b
+        fi
+        echo "Model ready!"
+        # Keep running so healthcheck can pass
+        while true; do sleep 3600; done
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list | grep -q gemma3 || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 60
+      start_period: 10s
+    restart: unless-stopped
+
+  # Flask application
+  app:
+    build: .
+    container_name: talkpi-app
+    ports:
+      - "5000:5000"
+    env_file:
+      - env.docker
+    volumes:
+      # Mount front folder for live frontend updates (no rebuild needed)
+      - ./front:/app/front:ro
+    depends_on:
+      ollama-init:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
+

@@ -90,14 +90,50 @@
       .bubble.assistant{ background: linear-gradient(180deg, rgba(255,65,101,0.06), rgba(255,65,101,0.02)); border:1px solid rgba(255,65,101,0.03); }
 
       .controls{ padding:14px 16px; border-top:1px solid rgba(255,255,255,0.02); display:flex; flex-direction:column; gap:10px; }
-      .input-row{ display:flex; gap:8px; align-items:flex-end; }
-      textarea{ flex:1; min-height:84px; max-height:260px; resize:vertical; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.03); background:transparent; color:var(--muted); font-family:var(--mono); font-size:0.95rem; }
-      .btn{ background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; box-shadow:0 8px 24px rgba(124,58,237,0.14); transition: transform 0.15s, box-shadow 0.15s; }
-      .btn:hover{ transform: translateY(-1px); box-shadow:0 12px 28px rgba(124,58,237,0.2); }
-      .btn.secondary{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.08); font-weight:700; }
-      .btn.secondary:hover{ border-color: rgba(255,255,255,0.15); }
-      .btn.ghost{ background:transparent; color:var(--muted); border:none; }
-      .btn.ghost:hover{ color:#fff; }
+      .input-row{ display:flex; gap:12px; align-items:flex-end; }
+      textarea{ flex:1; min-height:84px; max-height:260px; resize:none; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.2); color:#e6eef6; font-family:var(--mono); font-size:0.95rem; transition: border-color 0.2s; }
+      textarea:focus{ outline:none; border-color: rgba(124,58,237,0.4); }
+      
+      /* Main action buttons - hacker style */
+      .btn-group{ display:flex; flex-direction:column; gap:8px; }
+      .btn{ 
+        background: transparent; 
+        color: #39ff14; 
+        border: 1px solid #39ff14; 
+        padding: 10px 20px; 
+        border-radius: 4px; 
+        cursor: pointer; 
+        font-weight: 600; 
+        font-size: 0.9rem; 
+        font-family: var(--mono);
+        transition: all 0.15s ease; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+      }
+      .btn:hover:not(:disabled){ 
+        background: rgba(57,255,20,0.1); 
+        box-shadow: 0 0 15px rgba(57,255,20,0.3), inset 0 0 15px rgba(57,255,20,0.05);
+      }
+      .btn:active:not(:disabled){ background: rgba(57,255,20,0.2); }
+      .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+      
+      .btn.speak{ color: #0ff; border-color: #0ff; }
+      .btn.speak:hover:not(:disabled){ background: rgba(0,255,255,0.1); box-shadow: 0 0 15px rgba(0,255,255,0.3); }
+      .btn.speak.recording{ color: #ff3333; border-color: #ff3333; animation: blink 0.8s infinite; }
+      .btn.speak.recording:hover{ background: rgba(255,51,51,0.1); box-shadow: 0 0 15px rgba(255,51,51,0.3); }
+      
+      .btn.stop{ color: #ff3333; border-color: #ff3333; }
+      .btn.stop:hover{ background: rgba(255,51,51,0.1); box-shadow: 0 0 15px rgba(255,51,51,0.3); }
+      
+      @keyframes blink{
+        0%, 100%{ opacity:1; }
+        50%{ opacity:0.5; }
+      }
+      
+      .btn.secondary{ color: var(--muted); border-color: rgba(255,255,255,0.2); }
+      .btn.secondary:hover{ border-color: rgba(255,255,255,0.4); color:#fff; background: rgba(255,255,255,0.05); }
+      .btn.ghost{ background:transparent; color:var(--muted); border:none; padding:8px 12px; font-size:0.85rem; }
+      .btn.ghost:hover{ color:#39ff14; }
       .controls .row{ display:flex; gap:8px; align-items:center; }
 
       /* Responsive */
@@ -147,6 +183,7 @@
         const audioPlayingRef = useRef(false);
         const messagesRef = useRef(null);
         const scrollDebounceRef = useRef(null);
+        const abortControllerRef = useRef(null);
 
         // cleanup on unmount
         useEffect(()=>{
@@ -276,11 +313,29 @@
           }
         }
 
+        function stopGeneration(){
+          if(abortControllerRef.current){
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+          }
+          // Stop audio playback
+          if(audioRef.current){ 
+            audioRef.current.pause(); 
+            audioRef.current.currentTime = 0;
+          }
+          audioQueueRef.current = [];
+          audioPlayingRef.current = false;
+          setLoading(false);
+        }
+
         async function sendText(text){
           if(!text) return;
           // Add user message
           setMessages(m => [...m, {role:'user', text}]);
           setLoading(true);
+
+          // Create abort controller for this request
+          abortControllerRef.current = new AbortController();
 
           // Add assistant placeholder and keep its index
           let assistantIndex = null;
@@ -292,7 +347,8 @@
           try{
             const resp = await fetch('/api/chat-text-stream', {
               method: 'POST', headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({text})
+              body: JSON.stringify({text}),
+              signal: abortControllerRef.current.signal
             });
 
             await streamEvents(resp, {
@@ -355,9 +411,15 @@
               }
             });
           }catch(e){
-            console.error(e);
-            setMessages(m => [...m, {role:'system', text: 'Flux interrompu : '+(e.message||e)}]);
-          }finally{ setLoading(false); }
+            // Don't show error if user aborted
+            if(e.name !== 'AbortError'){
+              console.error(e);
+              setMessages(m => [...m, {role:'system', text: 'Erreur : '+(e.message||e)}]);
+            }
+          }finally{ 
+            setLoading(false); 
+            abortControllerRef.current = null;
+          }
         }
 
         function onSend(e){ e.preventDefault(); sendText(input); setInput(''); }
@@ -521,10 +583,10 @@
                 </div>
                 <div className="brand-text">
                   <div className="title">Michk.IA</div>
-                  <div className="subtitle">IA dangereuse venue du futur</div>
+                  <div className="subtitle">L'IA dangereuse venue du futur</div>
                 </div>
               </div>
-              <div className="meta">/!\ Interface expérimentale<br/>/!\ Comportement non fiable</div>
+              <div className="meta">/!\ Interface expérimentale<br/>/!\ Comportement instable</div>
             </div>
 
             {/* Full-width Chat */}
@@ -578,9 +640,17 @@
                     onKeyDown={e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(input.trim() && !loading){ sendText(input); setInput(''); } } }}
                     placeholder="Tapez votre question ou appuyez sur 'Parler'..." 
                   />
-                  <div style={{display:'flex', flexDirection:'column', gap:8}}>
-                    <button className="btn" type="submit" disabled={loading}>Envoyer</button>
-                    <button className="btn secondary" type="button" onClick={onSpeak}>{recording ? `Arrêter (${countdown}s)` : 'Parler'}</button>
+                  <div className="btn-group">
+                    {loading ? (
+                      <button className="btn stop" type="button" onClick={stopGeneration}>[STOP]</button>
+                    ) : (
+                      <React.Fragment>
+                        <button className="btn" type="submit" disabled={loading}>&gt; Envoyer</button>
+                        <button className={"btn speak" + (recording ? " recording" : "")} type="button" onClick={onSpeak}>
+                          {recording ? `[REC ${countdown}s]` : '&gt; Parler'}
+                        </button>
+                      </React.Fragment>
+                    )}
                   </div>
                 </div>
 
