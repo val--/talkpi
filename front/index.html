@@ -78,7 +78,11 @@
       
       .card{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:var(--radius); box-shadow: 0 12px 40px rgba(0,0,0,0.6); overflow:hidden; position:relative; border:1px solid rgba(255,255,255,0.02); }
       .chat-area{ display:flex; flex-direction:column; min-height: 500px; max-height: 70vh; }
-      .messages{ padding:18px; display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; }
+      .messages{ padding:18px; display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; scrollbar-width: thin; scrollbar-color: rgba(57, 255, 20, 0.3) transparent; }
+      .messages::-webkit-scrollbar{ width:6px; }
+      .messages::-webkit-scrollbar-track{ background:transparent; }
+      .messages::-webkit-scrollbar-thumb{ background:rgba(57, 255, 20, 0.3); border-radius:3px; }
+      .messages::-webkit-scrollbar-thumb:hover{ background:rgba(57, 255, 20, 0.5); }
 
       .message{ display:flex; gap:10px; align-items:flex-start; }
       .avatar{ width:40px; height:40px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:#0b1220; background:linear-gradient(180deg,#e6eef6,#c7d2da); flex-shrink:0; overflow:hidden; }

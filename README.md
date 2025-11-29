@@ -2,7 +2,17 @@
 
 A lightweight French voice assistant using local AI models: speech-to-text (Whisper), language understanding (Ollama), and text-to-speech (Piper). Responses stream and play sentence-by-sentence.
 
-## Quick Start
+![Michk.IA Preview](preview.png)
+
+## Quick Start (Docker)
+
+```bash
+docker compose up
+```
+
+Then open http://localhost:5000 in your browser.
+
+## Quick Start (Manual)
 
 1. **Install dependencies**: `pip install -r requirements.txt`
 2. **Configure paths**: `cp .env.example .env` and edit with your local installation paths
