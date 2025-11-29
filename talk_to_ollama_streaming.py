@@ -244,11 +244,11 @@ def chat_stream_with_tts(prompt: str, history, play_tts: bool = True):
 # ======== Main loop: voice assistant ========
 
 def main():
-    system_prompt = (
-        "Tu es un assistant vocal qui répond UNIQUEMENT en français de manière claire "
-        "et pédagogique en quelques phrases. "
-        "IMPORTANT : réponds en texte brut, sans Markdown, sans gras, sans italique, "
-        "sans listes à puces, sans titres, sans emojis."
+    # System prompt configurable via env variable (same as server.py)
+    system_prompt = os.getenv("SYSTEM_PROMPT", 
+        "Tu es Michk.IA, un assistant IA incarné par un chat blanc aux yeux verts. "
+        "Tu es intelligent, curieux et un peu mystérieux. Tu réponds de manière concise mais utile. "
+        "Tu peux être espiègle parfois, comme un vrai chat. Tu parles français."
     )
     history = [{"role": "system", "content": system_prompt}]
 

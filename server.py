@@ -29,8 +29,17 @@ import threading
 app = Flask(__name__, static_folder='front', static_url_path='')
 CORS(app)
 
+# ============================================
+# CONFIGURATION - System Prompt (Persona)
+# ============================================
+SYSTEM_PROMPT = os.getenv("SYSTEM_PROMPT", """Tu es Michk.IA, un assistant IA incarné par un chat blanc aux yeux verts.
+Tu es intelligent, curieux et un peu mystérieux. Tu réponds de manière concise mais utile.
+Tu peux être espiègle parfois, comme un vrai chat. Tu parles français.""")
+# ============================================
+
 # In-memory conversation history (persist during server runtime)
-conversation_history = []
+# Start with the system prompt
+conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
 history_lock = threading.Lock()
 
 
@@ -471,8 +480,10 @@ def get_history():
 
 @app.route('/api/clear-history', methods=['POST'])
 def clear_history():
+    global conversation_history
     with history_lock:
-        conversation_history.clear()
+        # Keep the system prompt when clearing
+        conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
     return jsonify({"status": "ok"})
 
 
