@@ -1,0 +1,24 @@
+# Docker Compose for deployment on the Ollama server
+# All processing (STT, TTS, LLM) happens on this powerful machine
+# Clients just need a browser to access the web UI
+
+services:
+  app:
+    build: .
+    container_name: talkpi-app
+    ports:
+      - "5000:5000"
+    env_file:
+      - env.server
+    volumes:
+      - ./front:/app/front:ro
+    extra_hosts:
+      # Allow container to reach host's Ollama instance
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+# Usage:
+# 1. Copy this project to your Ollama server (192.168.1.212)
+# 2. Run: docker compose -f docker-compose.server.yml up -d --build
+# 3. Access from any browser: http://192.168.1.212:5000
+
