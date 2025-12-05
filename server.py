@@ -488,5 +488,20 @@ def clear_history():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    import ssl
+    
+    # Check for SSL certificates
+    cert_file = os.getenv("SSL_CERT", "/app/certs/cert.pem")
+    key_file = os.getenv("SSL_KEY", "/app/certs/key.pem")
+    use_https = os.getenv("USE_HTTPS", "false").lower() == "true"
+    port = int(os.getenv("PORT", "5000"))
+    
+    if use_https and os.path.exists(cert_file) and os.path.exists(key_file):
+        print(f"🔒 Starting HTTPS server on port {port}")
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(cert_file, key_file)
+        app.run(host="0.0.0.0", port=port, debug=False, ssl_context=ssl_context)
+    else:
+        print(f"🔓 Starting HTTP server on port {port}")
+        app.run(host="0.0.0.0", port=port, debug=False)
 

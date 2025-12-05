@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     wget \
     ffmpeg \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Piper TTS
@@ -60,7 +61,17 @@ ENV WHISPER_LANGUAGE=fr
 ENV OLLAMA_URL=http://ollama:11434/api/chat
 ENV OLLAMA_MODEL=gemma3:1b
 
-EXPOSE 5000
+# Generate self-signed SSL certificates
+RUN mkdir -p /app/certs && \
+    openssl req -x509 -newkey rsa:4096 \
+    -keyout /app/certs/key.pem \
+    -out /app/certs/cert.pem \
+    -days 365 \
+    -nodes \
+    -subj "/CN=talkpi/O=TalkPi/C=FR" \
+    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:192.168.1.212"
+
+EXPOSE 5000 443
 
 CMD ["python", "server.py"]
 

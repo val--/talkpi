@@ -1,13 +1,14 @@
 # Docker Compose for deployment on the Ollama server
 # All processing (STT, TTS, LLM) happens on this powerful machine
 # Clients just need a browser to access the web UI
+# HTTPS enabled for microphone access
 
 services:
   app:
     build: .
     container_name: talkpi-app
     ports:
-      - "5000:5000"
+      - "5000:5000"   # HTTPS port
     env_file:
       - env.server
     volumes:
@@ -20,5 +21,5 @@ services:
 # Usage:
 # 1. Copy this project to your Ollama server (192.168.1.212)
 # 2. Run: docker compose -f docker-compose.server.yml up -d --build
-# 3. Access from any browser: http://192.168.1.212:5000
-
+# 3. Access from any browser: https://192.168.1.212:5000
+#    (Accept the self-signed certificate warning)
