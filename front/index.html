@@ -159,6 +159,229 @@
         .cat-image{ width:90px; height:90px; }
         .subtitle{ font-size:0.85rem; }
       }
+
+      /* ========================================
+         MOBILE KIOSK MODE - Raspberry Pi touchscreen
+         Layout: Left = Cat button, Right = Chat history
+         ======================================== */
+      .mobile-kiosk {
+        display: none;
+      }
+      
+      @media (max-width: 800px), (max-height: 500px) {
+        /* Hide desktop interface */
+        .shell { display: none !important; }
+        
+        /* Show mobile kiosk - horizontal split */
+        .mobile-kiosk {
+          display: flex;
+          flex-direction: row;
+          height: 100vh;
+          height: 100dvh;
+          box-sizing: border-box;
+          background: linear-gradient(135deg, #06080b 0%, #0b0f14 100%);
+          overflow: hidden;
+        }
+        
+        /* LEFT HALF: Cat button area */
+        .kiosk-left {
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          box-sizing: border-box;
+          position: relative;
+          background: radial-gradient(ellipse at 50% 50%, rgba(57,255,20,0.08) 0%, transparent 70%);
+        }
+        
+        /* Cat as clickable button */
+        .cat-button {
+          position: relative;
+          cursor: pointer;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+          background: none;
+          border: none;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 12px;
+        }
+        
+        .cat-button:active {
+          transform: scale(0.96);
+        }
+        
+        /* Cat image wrapper with halo */
+        .cat-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        /* Green halo (default) */
+        .cat-halo {
+          position: absolute;
+          width: 280px;
+          height: 280px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(57,255,20,0.3) 0%, rgba(57,255,20,0.1) 40%, transparent 70%);
+          filter: blur(25px);
+          transition: all 0.3s ease;
+        }
+        
+        /* Red halo (recording) */
+        .cat-button.recording .cat-halo {
+          background: radial-gradient(circle, rgba(255,51,51,0.4) 0%, rgba(255,51,51,0.15) 40%, transparent 70%);
+          animation: haloRecPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes haloRecPulse {
+          0%, 100% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .kiosk-cat {
+          position: relative;
+          z-index: 1;
+          width: 200px;
+          height: auto;
+          object-fit: contain;
+          filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
+          animation: catFloat 4s ease-in-out infinite;
+          transition: filter 0.3s ease;
+        }
+        
+        .cat-button.recording .kiosk-cat {
+          filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5)) drop-shadow(0 0 30px rgba(255,51,51,0.4));
+        }
+        
+        /* Message below cat */
+        .cat-message {
+          font-family: var(--mono);
+          font-size: 0.85rem;
+          color: var(--muted);
+          text-align: center;
+          line-height: 1.4;
+          max-width: 180px;
+          transition: color 0.3s ease;
+        }
+        
+        .cat-button.recording .cat-message {
+          color: #ff6666;
+        }
+        
+        /* RIGHT HALF: Chat history */
+        .kiosk-right {
+          width: 50%;
+          display: flex;
+          flex-direction: column;
+          padding: 12px 16px 12px 8px;
+          box-sizing: border-box;
+          overflow: hidden;
+        }
+        
+        .kiosk-chat-title {
+          font-family: var(--mono);
+          font-size: 0.75rem;
+          color: var(--muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 8px;
+          flex-shrink: 0;
+        }
+        
+        /* Chat history container - scrollable */
+        .kiosk-chat-history {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          padding-right: 4px;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(57,255,20,0.3) transparent;
+        }
+        
+        .kiosk-chat-history::-webkit-scrollbar { width: 4px; }
+        .kiosk-chat-history::-webkit-scrollbar-track { background: transparent; }
+        .kiosk-chat-history::-webkit-scrollbar-thumb { background: rgba(57,255,20,0.3); border-radius: 2px; }
+        
+        /* Chat message bubbles */
+        .kiosk-msg {
+          padding: 10px 12px;
+          border-radius: 10px;
+          font-size: 0.85rem;
+          line-height: 1.4;
+          max-width: 95%;
+        }
+        
+        .kiosk-msg.user {
+          background: rgba(124,58,237,0.15);
+          border: 1px solid rgba(124,58,237,0.2);
+          align-self: flex-end;
+          color: #c4b5fd;
+        }
+        
+        .kiosk-msg.assistant {
+          background: rgba(57,255,20,0.08);
+          border: 1px solid rgba(57,255,20,0.15);
+          align-self: flex-start;
+          color: #e6eef6;
+        }
+        
+        .kiosk-msg.system {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.08);
+          align-self: center;
+          color: var(--muted);
+          font-size: 0.75rem;
+          font-style: italic;
+        }
+        
+        /* Empty state */
+        .kiosk-empty {
+          color: var(--muted);
+          font-style: italic;
+          font-size: 0.8rem;
+          text-align: center;
+          padding: 20px;
+        }
+        
+        /* Hide old elements */
+        .kiosk-header, .kiosk-bottom, .kiosk-center, .kiosk-response, .kiosk-footer,
+        .record-btn-wrapper, .kiosk-record-btn, .kiosk-status, .wave-ring {
+          display: none !important;
+        }
+      }
+      
+      /* Smaller screens (480x320, 3.5" displays) */
+      @media (max-height: 400px) {
+        .kiosk-left { padding: 10px; }
+        .kiosk-cat { width: 140px; }
+        .cat-halo { width: 200px; height: 200px; }
+        .cat-message { font-size: 0.75rem; max-width: 160px; }
+        .kiosk-right { padding: 8px 12px 8px 6px; }
+        .kiosk-chat-title { font-size: 0.65rem; margin-bottom: 6px; }
+        .kiosk-msg { padding: 8px 10px; font-size: 0.75rem; }
+      }
+      
+      /* Very small screens (320x240) */
+      @media (max-height: 280px) {
+        .kiosk-left { padding: 6px; }
+        .kiosk-cat { width: 100px; }
+        .cat-halo { width: 140px; height: 140px; }
+        .cat-message { font-size: 0.65rem; max-width: 120px; gap: 6px; }
+        .cat-button { gap: 6px; }
+        .kiosk-right { padding: 6px 8px 6px 4px; }
+        .kiosk-chat-title { font-size: 0.6rem; margin-bottom: 4px; }
+        .kiosk-msg { padding: 6px 8px; font-size: 0.65rem; border-radius: 8px; }
+      }
     </style>
     <!-- React + Babel via CDN for a simple no-build example -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -178,9 +401,39 @@
       // CONFIGURATION - Message d'accueil
       // ============================================
       const WELCOME_MESSAGE = "Bonjour, je suis **Michk.IA**. Posez-moi des questions !";
+      // Mobile breakpoint (px) - show kiosk mode below this width or height
+      const MOBILE_WIDTH = 800;
+      const MOBILE_HEIGHT = 500;
       // ============================================
 
+      // Hook to detect window size for responsive rendering
+      function useIsMobile() {
+        const [isMobile, setIsMobile] = useState(() => {
+          if (typeof window === 'undefined') return false;
+          return window.innerWidth <= MOBILE_WIDTH || window.innerHeight <= MOBILE_HEIGHT;
+        });
+        
+        useEffect(() => {
+          const checkMobile = () => {
+            setIsMobile(window.innerWidth <= MOBILE_WIDTH || window.innerHeight <= MOBILE_HEIGHT);
+          };
+          
+          window.addEventListener('resize', checkMobile);
+          window.addEventListener('orientationchange', checkMobile);
+          // Check on mount
+          checkMobile();
+          
+          return () => {
+            window.removeEventListener('resize', checkMobile);
+            window.removeEventListener('orientationchange', checkMobile);
+          };
+        }, []);
+        
+        return isMobile;
+      }
+
       function App(){
+        const isMobile = useIsMobile();
         const [input, setInput] = useState('');
         const [messages, setMessages] = useState([
           { role: 'assistant', text: '' }
@@ -459,12 +712,24 @@
 
         function onSend(e){ e.preventDefault(); sendText(input); setInput(''); }
 
-        // Use Web Speech API for simple browser-side recording/transcription
-        // Toggle recording: start or stop
+        // Click on cat: start recording, stop recording (send), or interrupt AI
         function onSpeak(){
           if(recording){
+            // Already recording → stop and SEND the recorded audio
             stopRecording();
-          }else{
+          } else if(loading){
+            // AI is generating → stop generation and start new recording
+            stopGeneration();
+            setTimeout(() => startRecording(), 100);
+          } else {
+            // Idle → start recording
+            // First stop any playing audio
+            if(audioRef.current){ 
+              audioRef.current.pause(); 
+              audioRef.current.currentTime = 0;
+            }
+            audioQueueRef.current = [];
+            audioPlayingRef.current = false;
             startRecording();
           }
         }
@@ -608,108 +873,227 @@
           }
         }
 
-        return (
-          <div className="shell">
-            {/* Header: Cat + Title */}
-            <div className="header-bar">
-              <div className="brand">
-                <div className="cat-avatar">
-                  <img className="cat-image" src="michkia_gentil_transp.png" alt="Michk.IA" onError={(e)=>{ e.target.src='michkia_transp.png'; }} />
-                </div>
-                <div className="brand-text">
-                  <div className="title">Michk.IA</div>
-                  <div className="subtitle">L'IA dangereuse venue du futur</div>
-                </div>
-              </div>
-              <div className="meta">/!\ Interface expérimentale<br/>/!\ Comportement instable</div>
-            </div>
+        // Get the last assistant message for mobile kiosk display
+        const lastAssistantMsg = messages.filter(m => m.role === 'assistant').slice(-1)[0];
+        const kioskStatus = recording ? 'listening' : loading ? 'processing' : '';
+        const kioskStatusText = recording 
+          ? "J'écoute..." 
+          : loading 
+            ? "Réflexion en cours..." 
+            : "";
 
-            {/* Full-width Chat */}
-            <div className="card chat-area">
-              <div className="messages" id="messages" ref={messagesRef}>
-                {messages.map((m,i)=>{
-                  const isUser = m.role === 'user';
-                  const isAssistant = m.role === 'assistant';
-                  const roleLabel = isUser ? 'Vous' : isAssistant ? 'Michk.IA' : 'Système';
-                  return (
-                    <div key={i} className="message">
-                      {isAssistant ? (
-                        <div className="avatar assistant">
-                          <img src="michkia_transp.png" alt="Michk.IA" className="avatar-img" />
-                        </div>
-                      ) : (
-                        <div className={"avatar " + (isUser ? 'user' : 'system')}>{isUser ? 'U' : 'S'}</div>
-                      )}
-                      <div className={"bubble " + (isUser ? 'user' : isAssistant ? 'assistant' : 'system')}> 
-                        <div style={{fontSize:12, color: isAssistant ? '#39ff14' : '#374151', marginBottom:6, fontWeight:600}}>{roleLabel}</div>
-                        <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse(m.text || ''))}} />
-                      </div>
+        // Render mobile kiosk or desktop based on screen size
+        if (isMobile) {
+          // Filter messages for chat display (exclude welcome typing)
+          const chatMessages = messages.filter((m, i) => i > 0 || m.text !== '');
+          
+          return (
+            <React.Fragment>
+              {/* ========== MOBILE KIOSK VIEW ========== */}
+              {/* Layout: Left = Cat button, Right = Chat history */}
+              <div className="mobile-kiosk" style={{display: 'flex'}}>
+                
+                {/* LEFT: Cat as clickable button */}
+                <div className="kiosk-left">
+                  <button 
+                    className={"cat-button" + (recording ? " recording" : "")}
+                    onClick={onSpeak}
+                    disabled={loading && !recording}
+                  >
+                    <div className="cat-wrapper">
+                      <div className="cat-halo"></div>
+                      <img 
+                        className="kiosk-cat" 
+                        src="michkia_gentil_transp.png" 
+                        alt="Michk.IA" 
+                        onError={(e)=>{ e.target.src='michkia_transp.png'; }} 
+                      />
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* floating jump-to-bottom button */}
-              <button
-                title="Aller au bas"
-                onClick={()=>{
-                  if(messagesRef.current){ messagesRef.current.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); isAtBottomRef.current = true; setShowScrollBtn(false); }
-                }}
-                style={{
-                  position:'absolute',
-                  right:16,
-                  bottom:92,
-                  display: showScrollBtn ? 'inline-flex' : 'none',
-                  alignItems:'center',
-                  justifyContent:'center',
-                  padding:'8px 12px',
-                  borderRadius:8,
-                  boxShadow:'0 6px 16px rgba(2,6,23,0.08)',
-                  background:'#0ea5e9',
-                  color:'#fff',
-                  border:'none',
-                  cursor:'pointer'
-                }}
-              >
-                Aller au bas
-              </button>
-
-              <form onSubmit={onSend} className="controls">
-                <div className="input-row">
-                  <textarea 
-                    value={input} 
-                    onChange={e=>setInput(e.target.value)} 
-                    onKeyDown={e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(input.trim() && !loading){ sendText(input); setInput(''); } } }}
-                    placeholder="Tapez votre question ou appuyez sur 'Parler'..." 
-                  />
-                  <div className="btn-group">
-                    {loading ? (
-                      <button className="btn stop" type="button" onClick={stopGeneration}>[STOP]</button>
+                    <div className="cat-message">
+                      {recording 
+                        ? `Michk.IA vous écoute... ${countdown}s`
+                        : loading
+                          ? "Michk.IA réfléchit..."
+                          : "Touche Michk.IA pour lui parler"
+                      }
+                    </div>
+                  </button>
+                </div>
+                
+                {/* RIGHT: Chat history */}
+                <div className="kiosk-right">
+                  <div className="kiosk-chat-history" ref={messagesRef}>
+                    {chatMessages.length === 0 ? (
+                      <div className="kiosk-empty">
+                        La conversation apparaîtra ici...
+                      </div>
                     ) : (
-                      <React.Fragment>
-                        <button className="btn" type="submit" disabled={loading}>&gt; Envoyer</button>
-                        <button className={"btn speak" + (recording ? " recording" : "")} type="button" onClick={onSpeak}>
-                          {recording ? `[REC ${countdown}s]` : 'Parler'}
-                        </button>
-                      </React.Fragment>
+                      chatMessages.map((m, i) => (
+                        <div 
+                          key={i} 
+                          className={"kiosk-msg " + m.role}
+                          dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse(m.text || ''))}}
+                        />
+                      ))
                     )}
                   </div>
                 </div>
+              </div>
+              
+              {/* Audio element */}
+              <audio ref={audioRef} style={{display:'none'}} />
+            </React.Fragment>
+          );
+        }
 
-                <div className="row">
-                  <div style={{display:'flex', gap:8}}>
-                    <button type="button" className="btn ghost" onClick={()=>{setMessages([]); fetch('/api/clear-history',{method:'POST'}).catch(()=>{});}}>Effacer</button>
-                    <button type="button" className="btn ghost" onClick={async ()=>{
-                      try{ const r = await fetch('/api/history'); const h = await r.json(); setMessages(h.map(item=>({role:item.role, text:item.content}))); }catch(e){ console.error(e); }
-                    }}>Historique</button>
+        return (
+          <React.Fragment>
+            {/* ========== MOBILE KIOSK VIEW (CSS fallback) ========== */}
+            <div className="mobile-kiosk">
+              <div className="kiosk-left">
+                <button 
+                  className={"cat-button" + (recording ? " recording" : "")}
+                  onClick={onSpeak}
+                  disabled={loading && !recording}
+                >
+                  <div className="cat-wrapper">
+                    <div className="cat-halo"></div>
+                    <img 
+                      className="kiosk-cat" 
+                      src="michkia_gentil_transp.png" 
+                      alt="Michk.IA" 
+                      onError={(e)=>{ e.target.src='michkia_transp.png'; }} 
+                    />
+                  </div>
+                  <div className="cat-message">
+                    {recording 
+                      ? `Michk.IA vous écoute... ${countdown}s`
+                      : loading
+                        ? "Michk.IA réfléchit..."
+                        : "Appuyez sur Michk.IA pour lui parler"
+                    }
+                  </div>
+                </button>
+              </div>
+              
+              <div className="kiosk-right">
+                <div className="kiosk-chat-history">
+                  {messages.filter((m, i) => i > 0 || m.text !== '').map((m, i) => (
+                    <div 
+                      key={i} 
+                      className={"kiosk-msg " + m.role}
+                      dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse(m.text || ''))}}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* ========== DESKTOP VIEW ========== */}
+            <div className="shell">
+              {/* Header: Cat + Title */}
+              <div className="header-bar">
+                <div className="brand">
+                  <div className="cat-avatar">
+                    <img className="cat-image" src="michkia_gentil_transp.png" alt="Michk.IA" onError={(e)=>{ e.target.src='michkia_transp.png'; }} />
+                  </div>
+                  <div className="brand-text">
+                    <div className="title">Michk.IA</div>
+                    <div className="subtitle">L'IA dangereuse venue du futur</div>
+                  </div>
+                </div>
+                <div className="meta">/!\ Interface expérimentale<br/>/!\ Comportement instable</div>
+              </div>
+
+              {/* Full-width Chat */}
+              <div className="card chat-area">
+                <div className="messages" id="messages" ref={messagesRef}>
+                  {messages.map((m,i)=>{
+                    const isUser = m.role === 'user';
+                    const isAssistant = m.role === 'assistant';
+                    const roleLabel = isUser ? 'Vous' : isAssistant ? 'Michk.IA' : 'Système';
+                    return (
+                      <div key={i} className="message">
+                        {isAssistant ? (
+                          <div className="avatar assistant">
+                            <img src="michkia_transp.png" alt="Michk.IA" className="avatar-img" />
+                          </div>
+                        ) : (
+                          <div className={"avatar " + (isUser ? 'user' : 'system')}>{isUser ? 'U' : 'S'}</div>
+                        )}
+                        <div className={"bubble " + (isUser ? 'user' : isAssistant ? 'assistant' : 'system')}> 
+                          <div style={{fontSize:12, color: isAssistant ? '#39ff14' : '#374151', marginBottom:6, fontWeight:600}}>{roleLabel}</div>
+                          <div dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(marked.parse(m.text || ''))}} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* floating jump-to-bottom button */}
+                <button
+                  title="Aller au bas"
+                  onClick={()=>{
+                    if(messagesRef.current){ messagesRef.current.scrollTo({ top: messagesRef.current.scrollHeight, behavior: 'smooth' }); isAtBottomRef.current = true; setShowScrollBtn(false); }
+                  }}
+                  style={{
+                    position:'absolute',
+                    right:16,
+                    bottom:92,
+                    display: showScrollBtn ? 'inline-flex' : 'none',
+                    alignItems:'center',
+                    justifyContent:'center',
+                    padding:'8px 12px',
+                    borderRadius:8,
+                    boxShadow:'0 6px 16px rgba(2,6,23,0.08)',
+                    background:'#0ea5e9',
+                    color:'#fff',
+                    border:'none',
+                    cursor:'pointer'
+                  }}
+                >
+                  Aller au bas
+                </button>
+
+                <form onSubmit={onSend} className="controls">
+                  <div className="input-row">
+                    <textarea 
+                      value={input} 
+                      onChange={e=>setInput(e.target.value)} 
+                      onKeyDown={e=>{ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); if(input.trim() && !loading){ sendText(input); setInput(''); } } }}
+                      placeholder="Tapez votre question ou appuyez sur 'Parler'..." 
+                    />
+                    <div className="btn-group">
+                      {loading ? (
+                        <button className="btn stop" type="button" onClick={stopGeneration}>[STOP]</button>
+                      ) : (
+                        <React.Fragment>
+                          <button className="btn" type="submit" disabled={loading}>&gt; Envoyer</button>
+                          <button className={"btn speak" + (recording ? " recording" : "")} type="button" onClick={onSpeak}>
+                            {recording ? `[REC ${countdown}s]` : 'Parler'}
+                          </button>
+                        </React.Fragment>
+                      )}
+                    </div>
                   </div>
 
-                </div>
-              </form>
-            </div>
+                  <div className="row">
+                    <div style={{display:'flex', gap:8}}>
+                      <button type="button" className="btn ghost" onClick={()=>{setMessages([]); fetch('/api/clear-history',{method:'POST'}).catch(()=>{});}}>Effacer</button>
+                      <button type="button" className="btn ghost" onClick={async ()=>{
+                        try{ const r = await fetch('/api/history'); const h = await r.json(); setMessages(h.map(item=>({role:item.role, text:item.content}))); }catch(e){ console.error(e); }
+                      }}>Historique</button>
+                    </div>
 
+                  </div>
+                </form>
+              </div>
+
+            </div>
+            
+            {/* Audio element (shared between views) */}
             <audio ref={audioRef} style={{display:'none'}} />
-          </div>
+          </React.Fragment>
         );
       }
 
