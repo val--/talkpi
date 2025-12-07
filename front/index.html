@@ -205,6 +205,17 @@
           flex-shrink: 0;
         }
         
+        /* Title above cat */
+        .kiosk-title {
+          font-family: var(--mono);
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #fff;
+          letter-spacing: 2px;
+          margin-bottom: 8px;
+          text-shadow: 0 0 20px rgba(57,255,20,0.5);
+        }
+        
         /* Cat as clickable button */
         .cat-button {
           position: relative;
@@ -271,6 +282,12 @@
           transition: filter 0.3s ease;
         }
         
+        /* Stop floating animation when talking - images must align perfectly */
+        .kiosk-cat.talking {
+          animation: none;
+          transform: translateY(0);
+        }
+        
         .cat-button.recording .kiosk-cat {
           filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5)) drop-shadow(0 0 30px rgba(255,51,51,0.4));
         }
@@ -282,7 +299,9 @@
           color: var(--muted);
           text-align: center;
           line-height: 1.4;
-          max-width: 180px;
+          max-width: 220px;
+          white-space: nowrap;
+          min-height: 1.4em; /* Keep space even when empty */
           transition: color 0.3s ease;
         }
         
@@ -477,6 +496,9 @@
         const [loading, setLoading] = useState(false);
         const [recording, setRecording] = useState(false);
         const [countdown, setCountdown] = useState(0);
+        const [talking, setTalking] = useState(false);
+        const [isSpeaking, setIsSpeaking] = useState(false); // true when audio is playing
+        const talkingIntervalRef = useRef(null);
         const recorderRef = useRef(null);
         const streamRef = useRef(null);
         const timerRef = useRef(null);
@@ -516,6 +538,7 @@
             if(autoStopRef.current) clearTimeout(autoStopRef.current);
             if(streamRef.current){ streamRef.current.getTracks().forEach(t=>t.stop()); }
             if(scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
+            if(talkingIntervalRef.current) clearInterval(talkingIntervalRef.current);
           };
         }, []);
 
@@ -562,6 +585,26 @@
           return ()=> el.removeEventListener('scroll', onScroll);
         }, []);
 
+        // Start talking animation (alternate images)
+        function startTalkingAnimation(){
+          if(talkingIntervalRef.current) return; // already running
+          setIsSpeaking(true); // Mark that we're in speaking mode
+          setTalking(true);
+          talkingIntervalRef.current = setInterval(() => {
+            setTalking(prev => !prev);
+          }, 200); // alternate every 200ms
+        }
+        
+        // Stop talking animation
+        function stopTalkingAnimation(){
+          if(talkingIntervalRef.current){
+            clearInterval(talkingIntervalRef.current);
+            talkingIntervalRef.current = null;
+          }
+          setTalking(false);
+          setIsSpeaking(false); // No longer speaking
+        }
+
         // play next audio chunk in queue
         function playNextAudio(){
           if(audioPlayingRef.current) {
@@ -571,11 +614,16 @@
           const q = audioQueueRef.current;
           if(!q.length) {
             console.log('AUDIO_QUEUE: queue empty, nothing to play');
+            stopTalkingAnimation(); // Stop talking when no more audio
             return;
           }
           const url = q.shift();
           console.log('AUDIO_QUEUE: starting playback, queue remaining=', q.length);
           audioPlayingRef.current = true;
+          
+          // Start talking animation when audio plays
+          startTalkingAnimation();
+          
           if(audioRef.current){
             audioRef.current.src = url;
             console.log('AUDIO_QUEUE: set audio src, calling play()');
@@ -583,6 +631,7 @@
             if(p && p.catch){
               p.catch(err=>{ 
                 console.error('AUDIO_QUEUE: play() rejected:', err);
+                stopTalkingAnimation();
               }).finally(()=>{});
             }
             audioRef.current.onended = ()=>{
@@ -590,8 +639,12 @@
               // revoke object URL and continue
               try{ URL.revokeObjectURL(url); }catch(e){}
               audioPlayingRef.current = false;
-              // play next if available
-              setTimeout(()=>playNextAudio(), 50);
+              // play next if available, or stop talking
+              if(q.length > 0){
+                setTimeout(()=>playNextAudio(), 50);
+              } else {
+                stopTalkingAnimation();
+              }
             };
           }
         }
@@ -649,6 +702,7 @@
           }
           audioQueueRef.current = [];
           audioPlayingRef.current = false;
+          stopTalkingAnimation(); // Stop talking animation
           setLoading(false);
         }
 
@@ -731,14 +785,14 @@
                 }
               },
               error: ({error})=>{
-                setMessages(m => [...m, {role:'system', text: 'Erreur : '+(error||'inconnue')}]);
+                setMessages(m => [...m, {role:'system', text: '😿 Miaou... Une erreur s\'est produite : '+(error||'inconnue')}]);
               }
             });
           }catch(e){
             // Don't show error if user aborted
             if(e.name !== 'AbortError'){
               console.error(e);
-              setMessages(m => [...m, {role:'system', text: 'Erreur : '+(e.message||e)}]);
+              setMessages(m => [...m, {role:'system', text: '😿 Oups ! Michk.IA a eu un problème : '+(e.message||e)}]);
             }
           }finally{ 
             setLoading(false); 
@@ -776,7 +830,7 @@
             return;
           }
 
-          setMessages(m => [...m, {role:'system', text: 'Enregistrement : capture de ' + (duration/1000) + 's...'}]);
+          setMessages(m => [...m, {role:'system', text: '🎤 Michk.IA tend l\'oreille... (' + (duration/1000) + 's max)'}]);
 
           try{
             const stream = await navigator.mediaDevices.getUserMedia({audio: true});
@@ -815,7 +869,7 @@
             }, duration);
           }catch(err){
             console.error('record start failed', err);
-            setMessages(m => [...m, {role:'system', text: 'Échec de l\'enregistrement : ' + (err.message||err)}]);
+            setMessages(m => [...m, {role:'system', text: '😿 Miaou... Michk.IA n\'a pas pu écouter : ' + (err.message||err)}]);
             setRecording(false);
             setCountdown(0);
           }
@@ -834,7 +888,7 @@
         async function uploadBlobStream(blob){
           const fd = new FormData();
           fd.append('file', blob, 'recording.webm');
-          setMessages(m => [...m, {role:'system', text: "Téléversement de l'enregistrement pour transcription..."}]);
+          setMessages(m => [...m, {role:'system', text: "🐱 Michk.IA a bien entendu ! Il réfléchit à ce que vous avez dit..."}]);
 
           // assistantIndex will be set when we receive the transcript event
           let assistantIndex = null;
@@ -899,13 +953,13 @@
                 }
               },
               error: ({error})=>{
-                setMessages(m => [...m, {role:'system', text: 'Error: '+(error||'unknown')}]);
+                setMessages(m => [...m, {role:'system', text: '😿 Miaou... Michk.IA a rencontré un souci : '+(error||'inconnu')}]);
               }
             });
 
           }catch(err){
             console.error('upload failed', err);
-            setMessages(m => [...m, {role:'system', text: 'Téléversement/transcription échoué : ' + (err.message||err)}]);
+            setMessages(m => [...m, {role:'system', text: '😿 Oups ! Michk.IA n\'a pas compris... Réessayez ? (' + (err.message||err) + ')'}]);
           }
         }
 
@@ -931,6 +985,7 @@
                 
                 {/* LEFT: Cat as clickable button */}
                 <div className="kiosk-left">
+                  <div className="kiosk-title">Michk.IA</div>
                   <button 
                     className={"cat-button" + (recording ? " recording" : "")}
                     onClick={onSpeak}
@@ -939,18 +994,20 @@
                     <div className="cat-wrapper">
                       <div className="cat-halo"></div>
                       <img 
-                        className="kiosk-cat" 
-                        src="michkia_gentil_transp.png" 
+                        className={"kiosk-cat" + (talking ? " talking" : "")}
+                        src={talking ? "michkia_final_2.png" : "michka_final_1.png"} 
                         alt="Michk.IA" 
-                        onError={(e)=>{ e.target.src='michkia_transp.png'; }} 
+                        onError={(e)=>{ e.target.src='michka_final_1.png'; }} 
                       />
                     </div>
                     <div className="cat-message">
                       {recording 
-                        ? `Michk.IA vous écoute... ${countdown}s`
-                        : loading
-                          ? "Michk.IA réfléchit..."
-                          : "Touche Michk.IA pour lui parler"
+                        ? `🎧 Je vous écoute... ${countdown}s`
+                        : isSpeaking
+                          ? ""
+                          : loading
+                            ? "💭 Laissez-moi réfléchir..."
+                            : "Touchez-moi pour parler"
                       }
                     </div>
                   </button>
@@ -987,6 +1044,7 @@
             {/* ========== MOBILE KIOSK VIEW (CSS fallback) ========== */}
             <div className="mobile-kiosk">
               <div className="kiosk-left">
+                <div className="kiosk-title">Michk.IA</div>
                 <button 
                   className={"cat-button" + (recording ? " recording" : "")}
                   onClick={onSpeak}
@@ -995,20 +1053,22 @@
                   <div className="cat-wrapper">
                     <div className="cat-halo"></div>
                     <img 
-                      className="kiosk-cat" 
-                      src="michkia_gentil_transp.png" 
+                      className={"kiosk-cat" + (talking ? " talking" : "")}
+                      src={talking ? "michkia_final_2.png" : "michka_final_1.png"} 
                       alt="Michk.IA" 
-                      onError={(e)=>{ e.target.src='michkia_transp.png'; }} 
+                      onError={(e)=>{ e.target.src='michka_final_1.png'; }} 
                     />
                   </div>
-                  <div className="cat-message">
-                    {recording 
-                      ? `Michk.IA vous écoute... ${countdown}s`
-                      : loading
-                        ? "Michk.IA réfléchit..."
-                        : "Appuyez sur Michk.IA pour lui parler"
-                    }
-                  </div>
+                    <div className="cat-message">
+                      {recording 
+                        ? `🎧 Je vous écoute... ${countdown}s`
+                        : isSpeaking
+                          ? ""
+                          : loading
+                            ? "💭 Laissez-moi réfléchir..."
+                            : "Touchez-moi pour parler"
+                      }
+                    </div>
                 </button>
               </div>
               
@@ -1031,7 +1091,7 @@
               <div className="header-bar">
                 <div className="brand">
                   <div className="cat-avatar">
-                    <img className="cat-image" src="michkia_gentil_transp.png" alt="Michk.IA" onError={(e)=>{ e.target.src='michkia_transp.png'; }} />
+                    <img className="cat-image" src="michka_final_1.png" alt="Michk.IA" onError={(e)=>{ e.target.src='michkia_transp.png'; }} />
                   </div>
                   <div className="brand-text">
                     <div className="title">Michk.IA</div>
@@ -1052,7 +1112,7 @@
                       <div key={i} className="message">
                         {isAssistant ? (
                           <div className="avatar assistant">
-                            <img src="michkia_transp.png" alt="Michk.IA" className="avatar-img" />
+                            <img src="michka_final_1.png" alt="Michk.IA" className="avatar-img" />
                           </div>
                         ) : (
                           <div className={"avatar " + (isUser ? 'user' : 'system')}>{isUser ? 'U' : 'S'}</div>
