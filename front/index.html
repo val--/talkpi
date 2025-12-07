@@ -172,18 +172,25 @@
         /* Hide desktop interface */
         .shell { display: none !important; }
         
-        /* Show mobile kiosk - horizontal split */
+        /* Show mobile kiosk - horizontal split, NO page scroll */
         .mobile-kiosk {
           display: flex;
           flex-direction: row;
           height: 100vh;
           height: 100dvh;
+          max-height: 100vh;
+          max-height: 100dvh;
           box-sizing: border-box;
           background: linear-gradient(135deg, #06080b 0%, #0b0f14 100%);
           overflow: hidden;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
         }
         
-        /* LEFT HALF: Cat button area */
+        /* LEFT HALF: Cat button area - FIXED, no scroll */
         .kiosk-left {
           width: 50%;
           display: flex;
@@ -194,6 +201,8 @@
           box-sizing: border-box;
           position: relative;
           background: radial-gradient(ellipse at 50% 50%, rgba(57,255,20,0.08) 0%, transparent 70%);
+          overflow: hidden;
+          flex-shrink: 0;
         }
         
         /* Cat as clickable button */
@@ -223,21 +232,27 @@
           justify-content: center;
         }
         
-        /* Green halo (default) */
+        /* Green halo (default) - more visible */
         .cat-halo {
           position: absolute;
-          width: 280px;
-          height: 280px;
+          width: 350px;
+          height: 350px;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(57,255,20,0.3) 0%, rgba(57,255,20,0.1) 40%, transparent 70%);
-          filter: blur(25px);
+          background: radial-gradient(circle, rgba(57,255,20,0.5) 0%, rgba(57,255,20,0.25) 35%, rgba(57,255,20,0.1) 55%, transparent 75%);
+          filter: blur(20px);
           transition: all 0.3s ease;
+          animation: haloPulse 3s ease-in-out infinite;
         }
         
-        /* Red halo (recording) */
+        @keyframes haloPulse {
+          0%, 100% { transform: scale(1); opacity: 0.9; }
+          50% { transform: scale(1.05); opacity: 1; }
+        }
+        
+        /* Red halo (recording) - very visible */
         .cat-button.recording .cat-halo {
-          background: radial-gradient(circle, rgba(255,51,51,0.4) 0%, rgba(255,51,51,0.15) 40%, transparent 70%);
-          animation: haloRecPulse 1s ease-in-out infinite;
+          background: radial-gradient(circle, rgba(255,51,51,0.6) 0%, rgba(255,51,51,0.35) 35%, rgba(255,51,51,0.15) 55%, transparent 75%);
+          animation: haloRecPulse 0.8s ease-in-out infinite;
         }
         
         @keyframes haloRecPulse {
@@ -248,7 +263,7 @@
         .kiosk-cat {
           position: relative;
           z-index: 1;
-          width: 200px;
+          width: 260px;
           height: auto;
           object-fit: contain;
           filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
@@ -280,9 +295,10 @@
           width: 50%;
           display: flex;
           flex-direction: column;
-          padding: 12px 16px 12px 8px;
+          padding: 12px 12px 12px 8px;
           box-sizing: border-box;
           overflow: hidden;
+          min-height: 0; /* Important for flex child scrolling */
         }
         
         .kiosk-chat-title {
@@ -295,7 +311,7 @@
           flex-shrink: 0;
         }
         
-        /* Chat history container - scrollable */
+        /* Chat history container - scrollable independently */
         .kiosk-chat-history {
           flex: 1;
           overflow-y: auto;
@@ -303,14 +319,34 @@
           display: flex;
           flex-direction: column;
           gap: 8px;
-          padding-right: 4px;
+          padding-right: 8px;
+          min-height: 0; /* Critical for scroll to work in flex */
+          
+          /* Firefox scrollbar */
           scrollbar-width: thin;
-          scrollbar-color: rgba(57,255,20,0.3) transparent;
+          scrollbar-color: rgba(57,255,20,0.2) transparent;
+          
+          /* Smooth scroll */
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
         }
         
-        .kiosk-chat-history::-webkit-scrollbar { width: 4px; }
-        .kiosk-chat-history::-webkit-scrollbar-track { background: transparent; }
-        .kiosk-chat-history::-webkit-scrollbar-thumb { background: rgba(57,255,20,0.3); border-radius: 2px; }
+        /* Webkit scrollbar (Chrome, Safari, Edge) */
+        .kiosk-chat-history::-webkit-scrollbar { 
+          width: 6px; 
+        }
+        .kiosk-chat-history::-webkit-scrollbar-track { 
+          background: rgba(255,255,255,0.02);
+          border-radius: 3px;
+        }
+        .kiosk-chat-history::-webkit-scrollbar-thumb { 
+          background: rgba(57,255,20,0.25);
+          border-radius: 3px;
+          transition: background 0.2s ease;
+        }
+        .kiosk-chat-history::-webkit-scrollbar-thumb:hover { 
+          background: rgba(57,255,20,0.4);
+        }
         
         /* Chat message bubbles */
         .kiosk-msg {
@@ -363,9 +399,9 @@
       /* Smaller screens (480x320, 3.5" displays) */
       @media (max-height: 400px) {
         .kiosk-left { padding: 10px; }
-        .kiosk-cat { width: 140px; }
-        .cat-halo { width: 200px; height: 200px; }
-        .cat-message { font-size: 0.75rem; max-width: 160px; }
+        .kiosk-cat { width: 180px; }
+        .cat-halo { width: 250px; height: 250px; }
+        .cat-message { font-size: 0.75rem; max-width: 180px; }
         .kiosk-right { padding: 8px 12px 8px 6px; }
         .kiosk-chat-title { font-size: 0.65rem; margin-bottom: 6px; }
         .kiosk-msg { padding: 8px 10px; font-size: 0.75rem; }
@@ -374,9 +410,9 @@
       /* Very small screens (320x240) */
       @media (max-height: 280px) {
         .kiosk-left { padding: 6px; }
-        .kiosk-cat { width: 100px; }
-        .cat-halo { width: 140px; height: 140px; }
-        .cat-message { font-size: 0.65rem; max-width: 120px; gap: 6px; }
+        .kiosk-cat { width: 120px; }
+        .cat-halo { width: 170px; height: 170px; }
+        .cat-message { font-size: 0.65rem; max-width: 130px; gap: 6px; }
         .cat-button { gap: 6px; }
         .kiosk-right { padding: 6px 8px 6px 4px; }
         .kiosk-chat-title { font-size: 0.6rem; margin-bottom: 4px; }
