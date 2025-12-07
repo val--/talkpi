@@ -266,6 +266,17 @@
           animation: haloRecPulse 0.8s ease-in-out infinite;
         }
         
+        /* Orange halo (loading/processing) */
+        .cat-button.loading .cat-halo {
+          background: radial-gradient(circle, rgba(255,165,0,0.5) 0%, rgba(255,140,0,0.3) 35%, rgba(255,120,0,0.12) 55%, transparent 75%);
+          animation: haloLoadPulse 1.2s ease-in-out infinite;
+        }
+        
+        @keyframes haloLoadPulse {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.08); opacity: 1; }
+        }
+        
         @keyframes haloRecPulse {
           0%, 100% { transform: scale(1); opacity: 1; }
           50% { transform: scale(1.1); opacity: 0.8; }
@@ -496,9 +507,7 @@
         const [loading, setLoading] = useState(false);
         const [recording, setRecording] = useState(false);
         const [countdown, setCountdown] = useState(0);
-        const [talking, setTalking] = useState(false);
-        const [isSpeaking, setIsSpeaking] = useState(false); // true when audio is playing
-        const talkingIntervalRef = useRef(null);
+        const [isSpeaking, setIsSpeaking] = useState(false); // true when audio is playing (shows GIF)
         const recorderRef = useRef(null);
         const streamRef = useRef(null);
         const timerRef = useRef(null);
@@ -538,7 +547,6 @@
             if(autoStopRef.current) clearTimeout(autoStopRef.current);
             if(streamRef.current){ streamRef.current.getTracks().forEach(t=>t.stop()); }
             if(scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
-            if(talkingIntervalRef.current) clearInterval(talkingIntervalRef.current);
           };
         }, []);
 
@@ -585,24 +593,14 @@
           return ()=> el.removeEventListener('scroll', onScroll);
         }, []);
 
-        // Start talking animation (alternate images)
+        // Start speaking (show GIF)
         function startTalkingAnimation(){
-          if(talkingIntervalRef.current) return; // already running
-          setIsSpeaking(true); // Mark that we're in speaking mode
-          setTalking(true);
-          talkingIntervalRef.current = setInterval(() => {
-            setTalking(prev => !prev);
-          }, 200); // alternate every 200ms
+          setIsSpeaking(true);
         }
         
-        // Stop talking animation
+        // Stop speaking (show static image)
         function stopTalkingAnimation(){
-          if(talkingIntervalRef.current){
-            clearInterval(talkingIntervalRef.current);
-            talkingIntervalRef.current = null;
-          }
-          setTalking(false);
-          setIsSpeaking(false); // No longer speaking
+          setIsSpeaking(false);
         }
 
         // play next audio chunk in queue
@@ -886,6 +884,8 @@
         }
 
         async function uploadBlobStream(blob){
+          setLoading(true); // Start loading state (orange halo)
+          
           const fd = new FormData();
           fd.append('file', blob, 'recording.webm');
           setMessages(m => [...m, {role:'system', text: "🐱 Michk.IA a bien entendu ! Il réfléchit à ce que vous avez dit..."}]);
@@ -960,6 +960,8 @@
           }catch(err){
             console.error('upload failed', err);
             setMessages(m => [...m, {role:'system', text: '😿 Oups ! Michk.IA n\'a pas compris... Réessayez ? (' + (err.message||err) + ')'}]);
+          }finally{
+            setLoading(false); // End loading state
           }
         }
 
@@ -987,15 +989,15 @@
                 <div className="kiosk-left">
                   <div className="kiosk-title">Michk.IA</div>
                   <button 
-                    className={"cat-button" + (recording ? " recording" : "")}
+                    className={"cat-button" + (recording ? " recording" : "") + (loading && !isSpeaking ? " loading" : "")}
                     onClick={onSpeak}
                     disabled={loading && !recording}
                   >
                     <div className="cat-wrapper">
                       <div className="cat-halo"></div>
                       <img 
-                        className={"kiosk-cat" + (talking ? " talking" : "")}
-                        src={talking ? "michkia_final_2.png" : "michka_final_1.png"} 
+                        className={"kiosk-cat" + (isSpeaking ? " talking" : "")}
+                        src={isSpeaking ? "michka.gif" : "michka_final_1.png"} 
                         alt="Michk.IA" 
                         onError={(e)=>{ e.target.src='michka_final_1.png'; }} 
                       />
@@ -1046,15 +1048,15 @@
               <div className="kiosk-left">
                 <div className="kiosk-title">Michk.IA</div>
                 <button 
-                  className={"cat-button" + (recording ? " recording" : "")}
+                  className={"cat-button" + (recording ? " recording" : "") + (loading && !isSpeaking ? " loading" : "")}
                   onClick={onSpeak}
                   disabled={loading && !recording}
                 >
                   <div className="cat-wrapper">
                     <div className="cat-halo"></div>
                     <img 
-                      className={"kiosk-cat" + (talking ? " talking" : "")}
-                      src={talking ? "michkia_final_2.png" : "michka_final_1.png"} 
+                      className={"kiosk-cat" + (isSpeaking ? " talking" : "")}
+                      src={isSpeaking ? "michka.gif" : "michka_final_1.png"} 
                       alt="Michk.IA" 
                       onError={(e)=>{ e.target.src='michka_final_1.png'; }} 
                     />
