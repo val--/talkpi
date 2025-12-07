@@ -110,7 +110,7 @@ docker compose -f docker-compose.server.yml up -d --build
 ### 5. Access from any browser
 
 ```
-https://YOUR_SERVER_IP:5000
+https://YOUR_SERVER_IP:5001
 ```
 
 ⚠️ **First access**: You'll see a certificate warning (self-signed cert). Click **"Advanced"** → **"Proceed"** to continue.
@@ -193,7 +193,7 @@ First time accessing the app, you'll see a security warning. This is normal for 
 ### Alternative: Chrome Flag (Development only)
 
 ```bash
-google-chrome --unsafely-treat-insecure-origin-as-secure="http://192.168.1.212:5000"
+google-chrome --unsafely-treat-insecure-origin-as-secure="http://192.168.1.212:5001"
 ```
 
 ---
@@ -248,8 +248,8 @@ google-chrome --unsafely-treat-insecure-origin-as-secure="http://192.168.1.212:5
 
 ### Connection refused
 ```bash
-# Check if port is open
-sudo ufw allow 5000/tcp
+# Check if port is open (5001 for server deployment, 5000 for local)
+sudo ufw allow 5001/tcp
 
 # Check Docker is exposing the port
 docker ps
