@@ -103,6 +103,12 @@ ollama pull llama3.1:latest
 
 ### 4. Build and run with Docker
 
+**Simple option (recommended):**
+```bash
+make up
+```
+
+**Or manually:**
 ```bash
 docker compose -f docker-compose.server.yml up -d --build
 ```
@@ -114,6 +120,28 @@ https://YOUR_SERVER_IP:5001
 ```
 
 ⚠️ **First access**: You'll see a certificate warning (self-signed cert). Click **"Advanced"** → **"Proceed"** to continue.
+
+### Available Make Commands
+
+The project includes a `Makefile` to simplify Docker commands:
+
+```bash
+make help      # Show all available commands
+make up        # Start the server (build + up)
+make down      # Stop the server
+make restart   # Restart the server
+make logs      # Show logs in real-time
+make build     # Rebuild the Docker image
+make status    # Show container status
+make clean     # Stop and remove containers
+```
+
+For local development (port 5001):
+```bash
+make local-up    # Start in local mode
+make local-down  # Stop local mode
+make local-logs  # Local mode logs
+```
 
 ---
 
@@ -233,6 +261,7 @@ google-chrome --unsafely-treat-insecure-origin-as-secure="http://192.168.1.212:5
 
 | File | Purpose |
 |------|---------|
+| `Makefile` | Simplified commands (use `make up` instead of docker compose) |
 | `docker-compose.yml` | Basic setup (includes local Ollama) |
 | `docker-compose.server.yml` | Server deployment (external Ollama) |
 | `env.docker` | Config for docker-compose.yml |
